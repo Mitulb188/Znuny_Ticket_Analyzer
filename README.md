@@ -15,7 +15,7 @@ A small, **read-only** web dashboard for exploring the tickets in a [Znuny](http
 
 *The screenshots use synthetic demo data, not real tickets.*
 
-> **Unofficial project.** Ticketscope is not affiliated with or endorsed by Znuny GmbH, OTRS AG or any university or organisation. It only reads data; it never creates, changes, closes or deletes tickets.
+> **Unofficial project.** Znuny Ticket Analyzer is not affiliated with or endorsed by Znuny GmbH, OTRS AG or any university or organisation. It only reads data; it never creates, changes, closes or deletes tickets.
 
 ---
 
@@ -49,8 +49,8 @@ This gets the app running with synthetic data so you can see what it does.
 **Step 1: get the code**
 
 ```bash
-git clone https://github.com/<your-user>/ticketscope.git
-cd ticketscope
+git clone https://github.com/<your-user>/Znuny Ticket Analyzer.git
+cd Znuny Ticket Analyzer
 ```
 
 (No git? On GitHub click **Code → Download ZIP**, unzip it, and open a terminal in the unzipped folder.)
@@ -138,7 +138,7 @@ Usernames and passwords are **never** configured in files. They are typed on the
 
 ## 6. Znuny side: what the web service must provide
 
-Ticketscope uses the Python library [`pyotrs`](https://pyotrs.readthedocs.io/), which expects the standard Znuny/OTRS *Generic Interface* REST routes. Your web service must expose these operations:
+Znuny Ticket Analyzer uses the Python library [`pyotrs`](https://pyotrs.readthedocs.io/), which expects the standard Znuny/OTRS *Generic Interface* REST routes. Your web service must expose these operations:
 
 | Purpose | HTTP route (relative to the web service URL) |
 |---|---|
@@ -146,9 +146,9 @@ Ticketscope uses the Python library [`pyotrs`](https://pyotrs.readthedocs.io/), 
 | Search tickets | `GET /Ticket` |
 | Get one ticket (with articles) | `GET /Ticket/:TicketID` |
 
-Znuny ships a ready-made example web service configuration (`GenericTicketConnectorREST.yml`) that provides these routes; import it under *Admin → Web Services* and give it a name. Ticketscope only ever calls *login*, *search* and *get*: nothing that modifies data.
+Znuny ships a ready-made example web service configuration (`GenericTicketConnectorREST.yml`) that provides these routes; import it under *Admin → Web Services* and give it a name. Znuny Ticket Analyzer only ever calls *login*, *search* and *get*: nothing that modifies data.
 
-The login agent account must be allowed to use the web service and will see exactly the queues and tickets its Znuny permissions allow. Ticketscope sends your username and password once to log in (`UserLogin` / `Password`, an **agent** login, not a customer login) and then works with the session token Znuny returns.
+The login agent account must be allowed to use the web service and will see exactly the queues and tickets its Znuny permissions allow. Znuny Ticket Analyzer sends your username and password once to log in (`UserLogin` / `Password`, an **agent** login, not a customer login) and then works with the session token Znuny returns.
 
 Whether your Znuny accepts normal directory (e.g. LDAP) credentials on the API, or only dedicated API accounts, depends on how your administrators configured it. Browser single sign-on (SAML/Shibboleth) logins are **not** used by the API; if the API only accepts SSO, ask your administrators for an API-capable account.
 
@@ -179,7 +179,7 @@ Whether your Znuny accepts normal directory (e.g. LDAP) credentials on the API, 
 ## 9. How it works / project layout
 
 ```
-ticketscope/
+Znuny Ticket Analyzer/
 ├── app.py              Flask app: login, pages and JSON API
 ├── znuny.py            Read-only Znuny access via pyotrs (+ demo data generator)
 ├── store.py            Local SQLite cache (tickets and articles)
