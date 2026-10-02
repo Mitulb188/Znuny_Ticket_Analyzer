@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket Overview</title>
+<style>
+:root {
+  color-scheme: light;
+  --page:#f4f4f2; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#85847e;
+  --line:#e6e5e1; --accent:#2a78d6; --accent-ink:#fff; --hover:#f0efec;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --other:#9a9994;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page:#121211; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8f8e86;
+    --line:#2e2e2c; --accent:#3987e5; --accent-ink:#fff; --hover:#262624;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --other:#6e6d68;
+  }
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--page); color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap { max-width:1280px; margin:0 auto; padding:20px 16px 48px; }
+header { display:flex; flex-wrap:wrap; align-items:center; gap:12px; justify-content:space-between; margin-bottom:14px; }
+h1 { font-size:20px; margin:0; font-weight:650; }
+.sub { color:var(--ink-3); font-size:12px; }
+.banner { background:#fff4d6; color:#5a4300; border:1px solid #f0d98a; border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:13px; }
+@media (prefers-color-scheme: dark) { .banner { background:#3a2f0c; color:#f2dc9b; border-color:#5c4a12; } }
+button, select, input { font:inherit; color:var(--ink); }
+.btn { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; }
+.btn:hover { background:var(--hover); }
+.btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.btn.primary:hover { filter:brightness(1.08); }
+.btn:disabled { opacity:.55; cursor:default; }
+.filters { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); }
+.seg button { border:0; background:transparent; padding:6px 11px; cursor:pointer; border-right:1px solid var(--line); }
+.seg button:last-child { border-right:0; }
+.seg button:hover { background:var(--hover); }
+.seg button[aria-pressed="true"] { background:var(--accent); color:var(--accent-ink); }
+.filters input, .filters select { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 8px; }
+.filters label { color:var(--ink-2); font-size:12px; display:flex; align-items:center; gap:6px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:14px; }
+.tile, .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.tile { padding:12px 14px; }
+.tile .k { color:var(--ink-2); font-size:12px; }
+.tile .v { font-size:26px; font-weight:650; font-variant-numeric:tabular-nums; }
+.card { padding:14px 16px; margin-bottom:14px; }
+.card h2 { font-size:15px; margin:0; font-weight:650; }
+.cardhead { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.ctrls { display:flex; gap:8px; flex-wrap:wrap; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 16px; margin:4px 0 8px; color:var(--ink-2); font-size:12px; }
+.legend span { display:inline-flex; align-items:center; gap:6px; }
+.sw { width:10px; height:10px; border-radius:2px; display:inline-block; }
+#chartbox { position:relative; transition:opacity .15s; }
+.loading { opacity:.5; }
+svg text { fill:var(--ink-3); font-size:11px; }
+svg .grid { stroke:var(--line); stroke-width:1; }
+svg .axis { stroke:var(--ink-3); stroke-width:1; }
+#tip { position:absolute; pointer-events:none; background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:8px 10px; box-shadow:0 4px 14px rgba(0,0,0,.12); font-size:12px; display:none; min-width:150px; z-index:3; }
+#tip .d { color:var(--ink-2); margin-bottom:4px; }
+#tip .r { display:flex; align-items:center; gap:6px; justify-content:space-between; }
+#tip .r .n { color:var(--ink-2); flex:1; }
+#tip .r .n::before { content:""; display:inline-block; width:10px; height:2px; background:var(--c); margin-right:6px; vertical-align:middle; }
+#tip .r b { font-variant-numeric:tabular-nums; }
+.empty { padding:40px 0; text-align:center; color:var(--ink-3); }
+.tablewrap { overflow:auto; max-height:520px; border:1px solid var(--line); border-radius:8px; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+th { position:sticky; top:0; background:var(--surface); cursor:pointer; user-select:none; font-weight:600; color:var(--ink-2); z-index:1; }
+th:hover { color:var(--ink); }
+td.title { white-space:normal; min-width:260px; max-width:480px; }
+td.snip { white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2); }
+tbody tr { cursor:pointer; }
+#detail { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; z-index:10; }
+#detail .panel { position:absolute; right:0; top:0; bottom:0; width:min(640px,100%); background:var(--surface); border-left:1px solid var(--line); overflow:auto; padding:18px 20px; }
+#detail h3 { margin:0 28px 2px 0; font-size:16px; }
+.msg { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:10px 0; }
+.msg.customer { border-left:3px solid var(--accent); }
+.msg .meta { color:var(--ink-3); font-size:12px; margin-bottom:6px; display:flex; flex-wrap:wrap; gap:4px 12px; }
+.msg .meta b { color:var(--ink-2); }
+.msg pre { margin:0; white-space:pre-wrap; word-break:break-word; font:inherit; }
+#detail .x { position:absolute; right:14px; top:12px; }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+tbody tr:hover { background:var(--hover); }
+.dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; }
+.pager { display:flex; justify-content:space-between; align-items:center; margin-top:10px; color:var(--ink-2); font-size:12px; gap:8px; flex-wrap:wrap; }
+.err { color:#b3261e; font-size:13px; margin-bottom:10px; }
+@media (prefers-color-scheme: dark) { .err { color:#ff8a80; } }
+.bar { height:4px; background:var(--line); border-radius:2px; width:140px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:8px; }
+.bar i { display:block; height:100%; background:var(--accent); width:0; transition:width .2s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ticket Overview</h1>
+      <div class="sub" id="synced">Not synced yet</div>
+    </div>
+    <div>
+      <span class="sub">{{ user }}</span> <a class="btn" href="/logout" style="text-decoration:none;color:inherit;display:inline-block">Sign out</a>
+      <span class="sub" id="progress"></span><span class="bar" id="barwrap" style="display:none"><i id="barfill"></i></span>
+      <button class="btn primary" id="syncbtn" title="Fetch tickets for the selected date range from Znuny (read-only)">Sync from Znuny</button>
+    </div>
+  </header>
+
+  {% if demo %}<div class="banner">Demo mode: this data is synthetic and is not from Znuny.</div>{% endif %}
+  <div class="err" id="err" hidden></div>
+
+  <div class="filters">
+    <div class="seg" id="presets" role="group" aria-label="Date range">
+      <button data-d="7">7 days</button><button data-d="30" aria-pressed="true">30 days</button>
+      <button data-d="90">90 days</button><button data-d="365">1 year</button>
+    </div>
+    <label>From <input type="date" id="from"></label>
+    <label>To <input type="date" id="to"></label>
+    <label>Queue <select id="fqueue"><option value="">All</option></select></label>
+    <label>State <select id="fstate"><option value="">All</option></select></label>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Tickets in range</div><div class="v" id="t-total">-</div></div>
+    <div class="tile"><div class="k">Not closed</div><div class="v" id="t-open">-</div></div>
+    <div class="tile"><div class="k">Queues</div><div class="v" id="t-queues">-</div></div>
+    <div class="tile"><div class="k">Average per day</div><div class="v" id="t-avg">-</div></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead">
+      <h2>Tickets created over time</h2>
+      <div class="ctrls">
+        <div class="seg" id="gran" role="group" aria-label="Granularity">
+          <button data-g="day" aria-pressed="true">Day</button><button data-g="week">Week</button><button data-g="month">Month</button>
+        </div>
+        <div class="seg" id="stack" role="group" aria-label="Stack by">
+          <button data-s="queue" aria-pressed="true">By queue</button><button data-s="state">By state</button>
+        </div>
+        <div class="seg" id="view" role="group" aria-label="View">
+          <button data-v="chart" aria-pressed="true">Chart</button><button data-v="table">Table</button>
+        </div>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div id="chartbox"><div id="chart"></div><div id="tip"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead">
+      <h2>Ticket explorer</h2>
+      <div class="ctrls">
+        <input type="search" id="q" placeholder="Search title, number, customer, owner" style="min-width:260px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+        <button class="btn" id="csv">Export table CSV</button>
+        <button class="btn" id="acsv" title="All messages of the tickets in the selected date range">Export messages CSV</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <div class="pager"><span id="pinfo"></span><span><button class="btn" id="prev">Prev</button> <button class="btn" id="next">Next</button></span></div>
+  </div>
+</div>
+<div id="detail" aria-hidden="true"><div class="panel" role="dialog" aria-label="Ticket messages"><button class="btn x" id="dclose">Close</button><div id="dbody"></div></div></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SERIES = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS = 'http://www.w3.org/2000/svg';
+let ALL = [];            // everything in the local cache
+let FILTERED = [];       // after filters
+const S = { gran:'day', stack:'queue', view:'chart', sort:'created', dir:-1, page:0, size:50 };
+const COLS = [
+  ['number','Number'],['title','Title'],['queue','Queue'],['state','State'],['priority','Priority'],
+  ['owner','Owner'],['customer','Customer'],['created','Created'],['changed','Changed'],['articles','Articles'],['first_text','First message']
+];
+
+const iso = d => d.toISOString().slice(0,10);
+const isClosed = s => /^(closed|merged|removed)/i.test(s || '');
+
+function setRange(days) {
+  const t = new Date(), f = new Date(); f.setDate(t.getDate() - days + 1);
+  $('from').value = iso(f); $('to').value = iso(t);
+}
+
+// ---------- data ----------
+async function load() {
+  $('chartbox').classList.add('loading');
+  try {
+    const r = await fetch('/api/tickets'); if (r.status === 401) { location.href = '/login'; return; } const j = await r.json();
+    ALL = j.tickets;
+    $('synced').textContent = j.synced ? `Last sync ${j.synced} (range ${j.synced_range})` : 'Not synced yet - choose a date range and press Sync';
+    fillSelect('fqueue', 'queue'); fillSelect('fstate', 'state');
+    rankColors();
+    apply();
+  } catch (e) { showErr('Could not load data: ' + e.message); }
+  $('chartbox').classList.remove('loading');
+}
+function fillSelect(id, key) {
+  const sel = $(id), cur = sel.value;
+  const vals = [...new Set(ALL.map(t => t[key]).filter(Boolean))].sort();
+  sel.length = 1;
+  vals.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o); });
+  sel.value = vals.includes(cur) ? cur : '';
+}
+// colors follow the entity (ranked on the whole cache), so filters never repaint survivors
+const COLORMAP = { queue:{}, state:{} };
+function rankColors() {
+  for (const key of ['queue','state']) {
+    const n = {}; ALL.forEach(t => { const v = t[key] || '(none)'; n[v] = (n[v]||0)+1; });
+    const order = Object.keys(n).sort((a,b) => n[b]-n[a]);
+    COLORMAP[key] = {}; order.forEach((v,i) => COLORMAP[key][v] = i < SERIES.length ? SERIES[i] : '--other');
+  }
+}
+const colorOf = (key, v) => css(COLORMAP[key][v || '(none)'] || '--other');
+
+function apply() {
+  const f = $('from').value, t = $('to').value, q = $('fqueue').value, st = $('fstate').value;
+  FILTERED = ALL.filter(x => (!f || x.created.slice(0,10) >= f) && (!t || x.created.slice(0,10) <= t)
+    && (!q || x.queue === q) && (!st || x.state === st));
+  S.page = 0;
+  tiles(); drawChart(); drawTable();
+}
+
+function tiles() {
+  const f = $('from').value, t = $('to').value;
+  const days = Math.max(1, Math.round((new Date(t) - new Date(f)) / 864e5) + 1);
+  $('t-total').textContent = FILTERED.length.toLocaleString();
+  $('t-open').textContent = FILTERED.filter(x => !isClosed(x.state)).length.toLocaleString();
+  $('t-queues').textContent = new Set(FILTERED.map(x => x.queue)).size;
+  $('t-avg').textContent = (FILTERED.length / days).toFixed(1);
+}
+
+// ---------- time buckets ----------
+function bucketKey(dstr, g) {
+  const [y,m,d] = dstr.slice(0,10).split('-').map(Number);
+  if (g === 'month') return `${y}-${String(m).padStart(2,'0')}-01`;
+  if (g === 'week') { const dt = new Date(Date.UTC(y,m-1,d)); const wd = (dt.getUTCDay()+6)%7; dt.setUTCDate(dt.getUTCDate()-wd); return iso(dt); }
+  return dstr.slice(0,10);
+}
+function nextKey(k, g) {
+  const [y,m,d] = k.split('-').map(Number); const dt = new Date(Date.UTC(y,m-1,d));
+  if (g === 'month') dt.setUTCMonth(dt.getUTCMonth()+1); else dt.setUTCDate(dt.getUTCDate() + (g === 'week' ? 7 : 1));
+  return iso(dt);
+}
+function buildSeries() {
+  const g = S.gran, key = S.stack;
+  const totals = {}; FILTERED.forEach(t => { const v = t[key] || '(none)'; totals[v] = (totals[v]||0)+1; });
+  const names = Object.keys(totals).sort((a,b) => totals[b]-totals[a]);
+  const f = $('from').value, t = $('to').value;
+  const start = bucketKey(f || FILTERED.at(-1)?.created || iso(new Date()), g);
+  const end = bucketKey(t || iso(new Date()), g);
+  const keys = []; for (let k = start; k <= end && keys.length < 1500; k = nextKey(k, g)) keys.push(k);
+  const idx = Object.fromEntries(keys.map((k,i) => [k,i]));
+  const rows = keys.map(k => ({ key:k, by:{}, total:0 }));
+  FILTERED.forEach(x => { const r = rows[idx[bucketKey(x.created, g)]]; if (!r) return;
+    const v = x[key] || '(none)'; r.by[v] = (r.by[v]||0)+1; r.total++; });
+  return { names, rows, totals };
+}
+
+// ---------- chart ----------
+function drawChart() {
+  const host = $('chart'), tip = $('tip'); tip.style.display = 'none'; host.textContent = '';
+  const { names, rows, totals } = buildSeries();
+  const lg = $('legend'); lg.textContent = '';
+  if (!FILTERED.length) {
+    const e = document.createElement('div'); e.className = 'empty';
+    e.textContent = ALL.length ? 'No tickets match these filters.' : 'No data yet. Choose a date range and press "Sync from Znuny".';
+    host.appendChild(e); return;
+  }
+  names.forEach(n => { const s = document.createElement('span'); const sw = document.createElement('i'); sw.className = 'sw';
+    sw.style.background = colorOf(S.stack, n); s.appendChild(sw); s.appendChild(document.createTextNode(`${n} (${totals[n]})`)); lg.appendChild(s); });
+
+  if (S.view === 'table') return chartTable(host, names, rows);
+
+  const W = Math.max(320, host.clientWidth || 800), H = 300, m = { l:40, r:8, t:8, b:28 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const max = Math.max(1, ...rows.map(r => r.total));
+  const step = niceStep(max), top = Math.ceil(max/step)*step;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', '100%'); svg.setAttribute('role','img');
+  svg.setAttribute('aria-label', 'Stacked bar chart of tickets created over time; a table view is available.');
+  const el = (n, a, p=svg) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+  const y = v => m.t + ih - v/top*ih;
+  for (let v = 0; v <= top; v += step) {
+    el('line', { x1:m.l, x2:W-m.r, y1:y(v), y2:y(v), class: v ? 'grid' : 'axis' });
+    const t = el('text', { x:m.l-6, y:y(v)+4, 'text-anchor':'end' }); t.textContent = v;
+  }
+  const band = iw / rows.length, bw = Math.max(1, Math.min(28, band*0.72));
+  const surface = css('--surface');
+  rows.forEach((r, i) => {
+    const x = m.l + band*i + (band-bw)/2; let acc = 0;
+    const present = names.filter(n => r.by[n]);
+    present.forEach((n, j) => {
+      const h = r.by[n]/top*ih, y1 = y(acc + r.by[n]), isTop = j === present.length-1;
+      const hh = Math.max(1, h - (j ? 2 : 0));            // 2px surface gap between segments
+      const yy = y1;
+      const c = colorOf(S.stack, n);
+      if (isTop && bw >= 6 && hh > 4) {
+        const rad = 4; el('path', { d:`M${x},${yy+hh} V${yy+rad} Q${x},${yy} ${x+rad},${yy} H${x+bw-rad} Q${x+bw},${yy} ${x+bw},${yy+rad} V${yy+hh} Z`, fill:c });
+      } else el('rect', { x, y:yy, width:bw, height:hh, fill:c });
+      acc += r.by[n];
+    });
+  });
+  const every = Math.max(1, Math.ceil(rows.length / Math.max(2, Math.floor(iw/72))));
+  rows.forEach((r, i) => { if (i % every) return; const t = el('text', { x:m.l+band*i+band/2, y:H-8, 'text-anchor':'middle' }); t.textContent = label(r.key); });
+  const hl = el('rect', { y:m.t, height:ih, fill:'var(--ink)', opacity:0, 'pointer-events':'none' });
+  const hit = el('rect', { x:m.l, y:m.t, width:iw, height:ih, fill:'transparent' });
+  hit.addEventListener('pointermove', ev => {
+    const bb = svg.getBoundingClientRect(), px = (ev.clientX - bb.left) * W / bb.width;
+    const i = Math.max(0, Math.min(rows.length-1, Math.floor((px - m.l)/band))), r = rows[i];
+    hl.setAttribute('x', m.l+band*i); hl.setAttribute('width', band); hl.setAttribute('opacity', .06);
+    tip.textContent = '';
+    const d = document.createElement('div'); d.className = 'd'; d.textContent = range(r.key); tip.appendChild(d);
+    names.filter(n => r.by[n]).forEach(n => { const row = document.createElement('div'); row.className = 'r'; row.style.setProperty('--c', colorOf(S.stack, n));
+      const a = document.createElement('span'); a.className = 'n'; a.textContent = n; const b = document.createElement('b'); b.textContent = r.by[n]; row.append(a, b); tip.appendChild(row); });
+    const tt = document.createElement('div'); tt.className = 'r'; tt.style.marginTop = '4px';
+    const ta = document.createElement('span'); ta.className = 'n'; ta.style.fontWeight = 600; ta.textContent = 'Total'; const tb = document.createElement('b'); tb.textContent = r.total; tt.append(ta, tb); tip.appendChild(tt);
+    tip.style.display = 'block';
+    const cb = host.getBoundingClientRect(), tx = ev.clientX - cb.left + 14;
+    tip.style.left = Math.min(tx, cb.width - tip.offsetWidth - 4) + 'px'; tip.style.top = Math.max(0, ev.clientY - cb.top - tip.offsetHeight - 8) + 'px';
+  });
+  hit.addEventListener('pointerleave', () => { tip.style.display = 'none'; hl.setAttribute('opacity', 0); });
+  host.appendChild(svg);
+}
+function niceStep(max) { const raw = max/4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/p; return Math.max(1, (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p); }
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function label(k) { const [y,m,d] = k.split('-').map(Number); return S.gran === 'month' ? `${MON[m-1]} ${y}` : `${d} ${MON[m-1]}`; }
+function range(k) { const [y,m,d] = k.split('-').map(Number);
+  if (S.gran === 'month') return `${MON[m-1]} ${y}`; if (S.gran === 'day') return `${d} ${MON[m-1]} ${y}`;
+  return `Week of ${d} ${MON[m-1]} ${y}`; }
+function chartTable(host, names, rows) {
+  const w = document.createElement('div'); w.className = 'tablewrap'; const t = document.createElement('table');
+  const hr = t.createTHead().insertRow(); ['Period', ...names, 'Total'].forEach((h, i) => { const th = document.createElement('th'); th.textContent = h; if (i) th.className = 'num'; hr.appendChild(th); });
+  const tb = t.createTBody(); rows.slice().reverse().forEach(r => { const tr = tb.insertRow();
+    [range(r.key), ...names.map(n => r.by[n] || 0), r.total].forEach((v, i) => { const td = tr.insertCell(); td.textContent = v; if (i) td.className = 'num'; }); });
+  w.appendChild(t); host.appendChild(w);
+}
+
+// ---------- explorer table ----------
+function drawTable() {
+  const q = $('q').value.trim().toLowerCase();
+  let rows = FILTERED.filter(t => !q || [t.title, t.number, t.customer, t.owner].some(v => (v||'').toLowerCase().includes(q)));
+  rows.sort((a,b) => { const x = a[S.sort], y = b[S.sort];
+    if (x == null) return 1; if (y == null) return -1;
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * S.dir; });
+  const hasArt = rows.some(r => r.articles != null);
+  const cols = COLS.filter(c => (c[0] !== 'articles' && c[0] !== 'first_text') || hasArt);
+  const th = document.querySelector('#tbl thead'); th.textContent = '';
+  const hr = th.insertRow(); cols.forEach(([k, n]) => { const c = document.createElement('th'); c.textContent = n + (S.sort === k ? (S.dir > 0 ? ' ▲' : ' ▼') : '');
+    if (k === 'articles') c.className = 'num'; c.onclick = () => { S.dir = S.sort === k ? -S.dir : 1; S.sort = k; drawTable(); }; hr.appendChild(c); });
+  const pages = Math.max(1, Math.ceil(rows.length / S.size)); S.page = Math.min(S.page, pages-1);
+  const tb = document.querySelector('#tbl tbody'); tb.textContent = '';
+  rows.slice(S.page*S.size, (S.page+1)*S.size).forEach(r => { const tr = tb.insertRow();
+    cols.forEach(([k]) => { const td = tr.insertCell(); const v = r[k];
+      if (k === 'title') td.className = 'title';
+      if (k === 'articles') td.className = 'num';
+      if (k === 'first_text') td.className = 'snip';
+      if (k === 'queue' || k === 'state') { const d = document.createElement('i'); d.className = 'dot'; d.style.background = colorOf(k, v); td.appendChild(d); }
+      td.appendChild(document.createTextNode(v == null ? '' : v)); }); });
+  $('pinfo').textContent = rows.length ? `${rows.length.toLocaleString()} tickets - page ${S.page+1} of ${pages}` : 'No tickets';
+  $('prev').disabled = S.page === 0; $('next').disabled = S.page >= pages-1;
+  S.rows = rows; S.cols = cols;
+  tb.querySelectorAll('tr').forEach((tr, i) => tr.onclick = () => openTicket(rows[S.page*S.size + i]));
+}
+function exportCsv() {
+  const esc = v => { v = v == null ? '' : String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const lines = [S.cols.map(c => c[1]).join(','), ...S.rows.map(r => S.cols.map(c => esc(r[c[0]])).join(','))];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type:'text/csv' }));
+  a.download = 'tickets.csv'; a.click();
+}
+
+// ---------- ticket detail ----------
+async function openTicket(t) {
+  const body = $('dbody'); body.textContent = '';
+  const h = document.createElement('h3'); h.textContent = t.title || '(no title)'; body.appendChild(h);
+  const sub = document.createElement('div'); sub.className = 'sub'; sub.style.marginBottom = '8px';
+  sub.textContent = `#${t.number}  |  ${t.queue}  |  ${t.state}  |  created ${t.created}`; body.appendChild(sub);
+  $('detail').style.display = 'block';
+  const r = await fetch(`/api/tickets/${t.id}/articles`);
+  if (r.status === 401) { location.href = '/login'; return; }
+  const arts = (await r.json()).articles;
+  if (!arts.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No messages stored for this ticket. Sync again to fetch them.'; body.appendChild(e); }
+  arts.forEach(a => {
+    const m = document.createElement('div'); m.className = 'msg ' + (a.sender || '');
+    const meta = document.createElement('div'); meta.className = 'meta';
+    [[a.sender, true], [a.from_addr], [a.created]].forEach(([v, b]) => { if (!v) return; const s = document.createElement(b ? 'b' : 'span'); s.textContent = v; meta.appendChild(s); });
+    m.appendChild(meta);
+    if (a.subject) { const s = document.createElement('div'); s.style.fontWeight = 600; s.textContent = a.subject; m.appendChild(s); }
+    const pre = document.createElement('pre'); pre.textContent = a.body || ''; m.appendChild(pre);
+    body.appendChild(m);
+  });
+}
+$('dclose').onclick = () => $('detail').style.display = 'none';
+$('detail').addEventListener('click', e => { if (e.target.id === 'detail') $('detail').style.display = 'none'; });
+addEventListener('keydown', e => { if (e.key === 'Escape') $('detail').style.display = 'none'; });
+$('acsv').onclick = () => { location.href = `/api/export/articles.csv?from=${$('from').value}&to=${$('to').value}`; };
+
+// ---------- sync ----------
+function showErr(m) { const e = $('err'); e.textContent = m; e.hidden = !m; }
+async function sync() {
+  showErr(''); const f = $('from').value, t = $('to').value;
+  $('syncbtn').disabled = true; $('barwrap').style.display = 'inline-block';
+  const r = await fetch(`/api/sync?from=${f}&to=${t}`, { method:'POST' });
+  if (!r.ok) { showErr((await r.json()).error); $('syncbtn').disabled = false; return; }
+  const iv = setInterval(async () => {
+    const s = await (await fetch('/api/status')).json();
+    $('progress').textContent = s.msg; $('barfill').style.width = (s.total ? s.done/s.total*100 : 5) + '%';
+    if (!s.running) { clearInterval(iv); $('syncbtn').disabled = false; $('barwrap').style.display = 'none';
+      if (s.error) showErr('Sync failed: ' + s.error); else { $('progress').textContent = ''; load(); } }
+  }, 700);
+}
+
+// ---------- wiring ----------
+function seg(id, attr, key) {
+  $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+    S[key] = b.dataset[attr]; [...$(id).children].forEach(x => x.setAttribute('aria-pressed', x === b)); drawChart(); });
+}
+seg('gran','g','gran'); seg('stack','s','stack'); seg('view','v','view');
+$('presets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+  [...$('presets').children].forEach(x => x.setAttribute('aria-pressed', x === b)); setRange(+b.dataset.d); apply(); });
+['from','to'].forEach(id => $(id).addEventListener('change', () => { [...$('presets').children].forEach(x => x.setAttribute('aria-pressed', false)); apply(); }));
+['fqueue','fstate'].forEach(id => $(id).addEventListener('change', apply));
+$('q').addEventListener('input', () => { S.page = 0; drawTable(); });
+$('prev').onclick = () => { S.page--; drawTable(); }; $('next').onclick = () => { S.page++; drawTable(); };
+$('csv').onclick = exportCsv; $('syncbtn').onclick = sync;
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawChart, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { drawChart(); drawTable(); });
+setRange(30); load();
+</script>
+</body>
+</html>
