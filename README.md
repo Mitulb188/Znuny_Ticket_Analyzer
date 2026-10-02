@@ -1,4 +1,4 @@
-# Ticketscope
+# Znuny Ticket Analyzer
 
 A small, **read-only** web dashboard for exploring the tickets in a [Znuny](https://www.znuny.org/) / OTRS ticket system. It runs **locally on your own computer**, signs in with your own Znuny account, and shows:
 
